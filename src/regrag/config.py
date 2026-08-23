@@ -28,10 +28,17 @@ CHUNK_SIZE = 1200
 # Too much overlap inflates the index and makes retrieval return near-duplicates.
 CHUNK_OVERLAP = 200
 
-# Split on German legal structure markers before falling back to size-based splitting.
-# Whether this beats naive fixed-size chunking is one of the questions the harness answers.
-STRUCTURE_MARKERS = ("§", "Absatz", "Abs.", "Randziffer", "Rz.", "Artikel", "Art.")
+# Markers that START a section. These are the valid chunk boundaries.
+# Verified against BaFin Rundschreiben 06/2024 and 06/2026 by scripts/probe_extraction.py;
+# evidence recorded in docs/findings_session02.tex.
+# BTD and BTK were assumed initially and occur zero times in both documents -- removed.
+STRUCTURE_MARKERS = ("AT", "BTO", "BTR", "BT")
 
+# Markers that REFERENCE a section from inside running text ("gemäß Tz. 5").
+# Tz. occurs 33 and 41 times but begins a line only twice, and never, respectively.
+# These must NOT be used as chunk boundaries: splitting here cuts sentences at citations.
+# That § is likewise a citation (to other statutes) is still a hypothesis, not measured.
+CROSS_REFERENCE_MARKERS = ("Tz.", "§")
 # --- Embeddings -----------------------------------------------------------
 
 # Multilingual model, chosen so that German queries and German passages land in the

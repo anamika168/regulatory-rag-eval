@@ -19,3 +19,14 @@ data/processed/*
 
 # macOS
 .DS_Store
+
+# LaTeX build artefacts
+*.aux
+*.log
+*.out
+*.synctex.gz
+*.toc
+
+# IDE
+.idea/
+docs/
