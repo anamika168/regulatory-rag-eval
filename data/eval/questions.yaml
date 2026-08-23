@@ -1,0 +1,23 @@
+# Labelled evaluation set.
+#
+# This file is the most valuable artefact in the repository: it is hand-made, it is what
+# makes every metric possible, and it cannot be generated automatically without circularity.
+#
+# Each entry records a question, the passage that actually answers it, and whether the
+# corpus contains an answer at all. The `answerable: false` entries are deliberate --
+# they are how abstention gets measured. A system that never abstains scores zero on them.
+#
+# Fields:
+#   id           stable identifier
+#   question     the query, phrased as a practitioner would ask it
+#   answerable   whether the corpus contains the answer
+#   source_doc   filename of the document containing the answer (null if unanswerable)
+#   gold_span    a short verbatim quote from the passage that answers it (null if unanswerable)
+#   note         why this question is interesting -- ambiguity, near-duplicate, edge case
+
+- id: example-001
+  question: "Placeholder - replace once the corpus is loaded."
+  answerable: true
+  source_doc: null
+  gold_span: null
+  note: "Template entry. Delete once real questions are written."

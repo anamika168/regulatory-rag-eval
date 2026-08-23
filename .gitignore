@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Data: source documents and derived artefacts are not version-controlled.
+# data/eval/ IS tracked - the labelled question set is the valuable, hand-made part.
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+
+# Secrets
+.env
+
+# macOS
+.DS_Store

@@ -1,0 +1,17 @@
+# Text extraction
+pypdf>=5.1.0
+
+# Embeddings and dense retrieval
+sentence-transformers>=3.3.0
+faiss-cpu>=1.9.0
+
+# Generation
+anthropic>=0.40.0
+
+# Data handling and evaluation
+numpy>=1.26.0
+pandas>=2.2.0
+pyyaml>=6.0.0
+
+# Development
+pytest>=8.0.0
