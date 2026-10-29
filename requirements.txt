@@ -1,17 +1,19 @@
-# Text extraction
-pypdf>=5.1.0
+# Text extraction (word coordinates are needed for the column-aware reader)
+pdfplumber>=0.11.0
 
 # Embeddings and dense retrieval
 sentence-transformers>=3.3.0
 faiss-cpu>=1.9.0
 
-# Generation
-anthropic>=0.40.0
+# Generation (structured outputs via output_config)
+anthropic>=2.0.0
 
 # Data handling and evaluation
 numpy>=1.26.0
-pandas>=2.2.0
 pyyaml>=6.0.0
+
+# Analysis of results/*.jsonl in notebooks (not used by the package itself)
+pandas>=2.2.0
 
 # Development
 pytest>=8.0.0

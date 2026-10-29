@@ -1,0 +1,8 @@
+# Provenance of the corpus in data/raw/ (which is not version-controlled).
+#
+# One entry per PDF: where it was downloaded from and the SHA-256 of the exact file that
+# the results in results/ were produced from. Fill in with
+#     python scripts/fetch_corpus.py --record
+# then add `title` and `url` by hand. `python scripts/fetch_corpus.py` downloads missing
+# files and reports any whose content no longer matches the recorded hash.
+documents: []

@@ -11,9 +11,8 @@ dependencies = [
     "pdfplumber>=0.11.0",
     "sentence-transformers>=3.3.0",
     "faiss-cpu>=1.9.0",
-    "anthropic>=0.40.0",
+    "anthropic>=2.0.0",
     "numpy>=1.26.0",
-    "pandas>=2.2.0",
     "pyyaml>=6.0.0",
 ]
 
@@ -22,3 +21,8 @@ dev = ["pytest>=8.0.0"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.pytest.ini_options]
+# Tests run against the source tree without an editable install.
+pythonpath = ["src"]
+testpaths = ["tests"]
