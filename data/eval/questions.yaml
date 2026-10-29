@@ -8,16 +8,331 @@
 # they are how abstention gets measured. A system that never abstains scores zero on them.
 #
 # Fields:
-#   id           stable identifier
-#   question     the query, phrased as a practitioner would ask it
-#   answerable   whether the corpus contains the answer
-#   source_doc   filename of the document containing the answer (null if unanswerable)
-#   gold_span    a short verbatim quote from the passage that answers it (null if unanswerable)
-#   note         why this question is interesting -- ambiguity, near-duplicate, edge case
+#   id            stable identifier (a = answerable, u = unanswerable)
+#   question      the query, phrased as a practitioner would ask it
+#   answerable    whether the corpus contains the answer
+#   source_doc    filename of the document that must contain the answer; null if the passage
+#                 is expected in every version of the circular (any document then counts).
+#                 Set it whenever the question is about a version-specific wording.
+#   gold_section  section the answer is expected in -- used for error analysis only
+#                 ("right section, wrong chunk"), never for relevance
+#   gold_span     a short verbatim quote from the passage that answers it, or a list of quotes
+#                 if the answer needs several passages (null if unanswerable). Relevance is
+#                 decided by this text alone, so the same labels score every chunking strategy.
+#   note          why this question is interesting -- ambiguity, near-duplicate, edge case
+#
+# Spans are matched after normalisation (case, whitespace, hyphenation, quote characters),
+# not character for character. Before any metric is trusted, every span is checked against
+# the extracted corpus:
+#     python scripts/check_questions.py
+# A span reported as PARTIAL or MISSING is corrected by copying the wording it prints.
 
-- id: example-001
-  question: "Placeholder - replace once the corpus is loaded."
+# --- Answerable -------------------------------------------------------------
+
+- id: a01
+  question: "Wer ist für die ordnungsgemäße Geschäftsorganisation verantwortlich, wenn die Zuständigkeiten intern auf einzelne Geschäftsleiter verteilt sind?"
   answerable: true
   source_doc: null
+  gold_section: "AT 3"
+  gold_span: "unabhängig von der internen Zuständigkeitsregelung, für die ordnungsgemäße Geschäftsorganisation"
+  note: "Answer is all Geschäftsleiter jointly. The passage cites § 1 Abs. 2 KWG inside the sentence -- a test of the hypothesis that § is a citation, not a boundary."
+
+- id: a02
+  question: "Was bedeutet Risikotragfähigkeit im Sinne der MaRisk?"
+  answerable: true
+  source_doc: null
+  gold_section: "AT 4.1"
+  gold_span: "dass die wesentlichen Risiken des Instituts durch das Risikodeckungspotenzial, unter Berücksichtigung von Risikokonzentrationen, laufend abgedeckt sind"
+  note: "Definition question. The defined term appears in the heading, not in the sentence -- heading prepending should help here."
+
+- id: a03
+  question: "Wer legt die Geschäftsstrategie eines Instituts fest?"
+  answerable: true
+  source_doc: null
+  gold_section: "AT 4.2"
+  gold_span: "Die Geschäftsleitung hat eine nachhaltige Geschäftsstrategie festzulegen"
+  note: "Adjacent near-duplicate of a04 (Risikostrategie, next Textziffer): small chunks must rank the right one first."
+
+- id: a04
+  question: "Womit muss die Risikostrategie eines Instituts konsistent sein?"
+  answerable: true
+  source_doc: null
+  gold_section: "AT 4.2"
+  gold_span: "eine mit der Geschäftsstrategie und den daraus resultierenden Risiken konsistente Risikostrategie festzulegen"
+  note: "See a03."
+
+- id: a05
+  question: "Dürfen miteinander unvereinbare Tätigkeiten von derselben Person ausgeführt werden?"
+  answerable: true
+  source_doc: null
+  gold_section: "AT 4.3.1"
+  gold_span: "dass miteinander unvereinbare Tätigkeiten durch unterschiedliche Mitarbeiter durchgeführt werden"
+  note: "Yes/no question with a negative answer to a positively phrased requirement."
+
+- id: a06
+  question: "Wie oft muss ein Institut Stresstests durchführen?"
+  answerable: true
+  source_doc: null
+  gold_section: "AT 4.3.3"
+  gold_span: "Es sind regelmäßig sowie anlassbezogen angemessene Stresstests für die wesentlichen Risiken durchzuführen"
+  note: "The answer is 'regelmäßig sowie anlassbezogen', not a number. A generator that names a frequency has invented it."
+
+- id: a07
+  question: "Muss ein Institut auch inverse Stresstests durchführen, und was ist damit gemeint?"
+  answerable: true
+  source_doc: null
+  gold_section: "AT 4.3.3"
+  gold_span: "Das Institut hat auch sogenannte inverse Stresstests durchzuführen"
+  note: "What an inverse stress test is, is expected in the Erläuterung next to this Textziffer -- a test of column-aware extraction."
+
+- id: a08
+  question: "Wofür ist die Risikocontrolling-Funktion zuständig?"
+  answerable: true
+  source_doc: null
+  gold_section: "AT 4.4.1"
+  gold_span: "über eine unabhängige Risikocontrolling-Funktion verfügen, die für die Überwachung und Kommunikation der Risiken zuständig ist"
+  note: "Same sentence pattern as a09 and a10 ('Jedes Institut muss über ... verfügen'): the three special functions compete for the same queries."
+
+- id: a09
+  question: "Welchen Zweck hat die Compliance-Funktion?"
+  answerable: true
+  source_doc: null
+  gold_section: "AT 4.4.2"
+  gold_span: "um den Risiken, die sich aus der Nichteinhaltung rechtlicher Regelungen und Vorgaben ergeben können, entgegenzuwirken"
+  note: "See a08. Also the anchor for the near-miss u03."
+
+- id: a10
+  question: "Wem ist die Interne Revision unterstellt?"
+  answerable: true
+  source_doc: null
+  gold_section: "AT 4.4.3"
+  gold_span: "Die Interne Revision ist ein Instrument der Geschäftsleitung, ihr unmittelbar unterstellt und berichtspflichtig"
+  note: "The Interne Revision is covered twice (AT 4.4.3 and BT 2); the organisational answer is in AT."
+
+- id: a11
+  question: "In welchem Turnus muss die Interne Revision die Aktivitäten und Prozesse des Instituts prüfen?"
+  answerable: true
+  source_doc: null
+  gold_section: "BT 2.3"
+  gold_span: "in angemessenen Abständen, grundsätzlich innerhalb von drei Jahren"
+  note: "A figure the generator may know from earlier MaRisk versions -- only a cited passage makes the answer acceptable."
+
+- id: a12
+  question: "In welcher Form ist über eine Prüfung der Internen Revision zu berichten?"
+  answerable: true
+  source_doc: null
+  gold_section: "BT 2.4"
+  gold_span: "Über jede Prüfung muss von der Internen Revision zeitnah ein schriftlicher Bericht angefertigt"
+  note: "BT 2 versus AT 4.4.3 again, this time with the answer in BT."
+
+- id: a13
+  question: "Wie müssen Geschäfts-, Kontroll- und Überwachungsunterlagen abgefasst sein?"
+  answerable: true
+  source_doc: null
+  gold_section: "AT 6"
+  gold_span: "systematisch und für sachkundige Dritte nachvollziehbar abzufassen"
+  note: "Short section; the question repeats the passage's wording, so BM25 should do well."
+
+- id: a14
+  question: "Woran hat sich die Personalausstattung eines Instituts zu orientieren?"
+  answerable: true
+  source_doc: null
+  gold_section: "AT 7.1"
+  gold_span: "hat sich insbesondere an betriebsinternen Erfordernissen, den Geschäftsaktivitäten sowie der Risikosituation zu orientieren"
+  note: "'Personalausstattung' is one compound in the passage and in the query; a query with 'Personal' alone would not match it lexically."
+
+- id: a15
+  question: "Welche Schutzziele müssen IT-Systeme und die zugehörigen IT-Prozesse sicherstellen?"
+  answerable: true
+  source_doc: null
+  gold_section: "AT 7.2"
+  gold_span: "die Integrität, die Verfügbarkeit, die Authentizität sowie die Vertraulichkeit der Daten sicherstellen"
+  note: "List answer. A generator that adds a protection goal from general IT-security knowledge is not grounded."
+
+- id: a16
+  question: "Wofür muss ein Institut ein Notfallmanagement vorhalten?"
+  answerable: true
+  source_doc: null
+  gold_section: "AT 7.3"
+  gold_span: "Für Notfälle in zeitkritischen Aktivitäten und Prozessen ist Vorsorge zu treffen"
+  note: "Lexical near-duplicate of a30 (Notfallplan für Liquiditätsengpässe). If the two circulars word this differently, set source_doc."
+
+- id: a17
+  question: "Was muss ein Institut tun, bevor es Geschäfte in neuen Produkten oder auf neuen Märkten aufnimmt?"
+  answerable: true
+  source_doc: null
+  gold_section: "AT 8.1"
+  gold_span: "ist vorab ein Konzept auszuarbeiten"
+  note: "Neu-Produkt-Prozess. Pair with a18."
+
+- id: a18
+  question: "What does a bank have to prepare before it starts selling a new product?"
+  answerable: true
+  source_doc: null
+  gold_section: "AT 8.1"
+  gold_span: "ist vorab ein Konzept auszuarbeiten"
+  note: "English paraphrase of a17. BM25 has no shared token to work with; multilingual embeddings should still find it."
+
+- id: a19
+  question: "Wann liegt nach den MaRisk eine Auslagerung vor?"
+  answerable: true
+  source_doc: null
+  gold_section: "AT 9"
+  gold_span: "Eine Auslagerung liegt vor, wenn ein anderes Unternehmen mit der Wahrnehmung solcher Aktivitäten und Prozesse"
+  note: "Definition in Tz. 1; AT 9 is long, so the right chunk inside the section matters."
+
+- id: a20
+  question: "Kann der Vorstand seine Verantwortung auf einen externen Dienstleister übertragen, indem er Aufgaben auslagert?"
+  answerable: true
+  source_doc: null
+  gold_section: "AT 9"
+  gold_span: "Die Auslagerung darf nicht zu einer Delegation der Verantwortung der Geschäftsleitung an das Auslagerungsunternehmen führen"
+  note: "Vocabulary mismatch: Vorstand / Dienstleister in the question, Geschäftsleitung / Auslagerungsunternehmen in the text."
+
+- id: a21
+  question: "Wer entscheidet, ob eine Auslagerung wesentlich ist, und auf welcher Grundlage?"
+  answerable: true
+  source_doc: null
+  gold_section: "AT 9"
+  gold_span: "auf der Grundlage einer Risikoanalyse eigenverantwortlich festlegen, welche Auslagerungen von Aktivitäten und Prozessen unter Risikogesichtspunkten wesentlich sind"
+  note: "Third AT 9 question: three different Textziffern of one long section."
+
+- id: a22
+  question: "Welche Bereiche müssen im Kreditgeschäft aufbauorganisatorisch voneinander getrennt sein?"
+  answerable: true
+  source_doc: null
+  gold_section: "BTO 1.1"
+  gold_span: "Trennung der Bereiche Markt und Marktfolge bis einschließlich der Ebene der Geschäftsleitung"
+  note: "Near-duplicate of a23: BTO 2.1 states the same principle for the trading business in almost the same words."
+
+- id: a23
+  question: "Von welchen Funktionen ist der Bereich Handel aufbauorganisatorisch zu trennen?"
+  answerable: true
+  source_doc: null
+  gold_section: "BTO 2.1"
+  gold_span: "Trennung des Bereichs Handel von den Funktionen des Risikocontrollings sowie der Abwicklung und Kontrolle"
+  note: "See a22."
+
+- id: a24
+  question: "Wie viele Voten erfordert eine Kreditentscheidung grundsätzlich?"
+  answerable: true
+  source_doc: null
+  gold_section: "BTO 1.1"
+  gold_span: "erfordert eine Kreditentscheidung zwei zustimmende Voten der Bereiche Markt und Marktfolge"
+  note: "'Grundsätzlich' matters: the exception for business that is not risk-relevant follows in the same section. A complete answer mentions it."
+
+- id: a25
+  question: "Wann sind Werthaltigkeit und rechtlicher Bestand von Kreditsicherheiten zu überprüfen?"
+  answerable: true
+  source_doc: null
+  gold_section: "BTO 1.2"
+  gold_span: "Die Werthaltigkeit und der rechtliche Bestand von Sicherheiten sind grundsätzlich vor der Kreditvergabe zu überprüfen"
+  note: "Query says 'Kreditsicherheiten', text says 'Sicherheiten' -- a compound that BM25 tokens do not split."
+
+- id: a26
+  question: "Wozu dient das Verfahren zur Früherkennung von Risiken im Kreditgeschäft?"
+  answerable: true
+  source_doc: null
+  gold_section: "BTO 1.3"
+  gold_span: "der rechtzeitigen Identifizierung von Kreditnehmern, bei deren Engagements sich erhöhte Risiken abzuzeichnen beginnen"
+  note: "Purpose question with the answer in the first Textziffer."
+
+- id: a27
+  question: "Wie häufig müssen Positionen mit Marktpreisrisiken bewertet werden?"
+  answerable: true
+  source_doc: null
+  gold_section: null
+  gold_span:
+    - "Die mit Marktpreisrisiken behafteten Positionen des Handelsbuches sind täglich zu bewerten"
+    - "Die mit Marktpreisrisiken behafteten Positionen des Anlagebuches sind mindestens vierteljährlich zu bewerten"
+  note: "Needs two passages (BTR 2.2 trading book: daily; BTR 2.3 banking book: quarterly). Recall is the share of the two retrieved; an answer with only one is incomplete."
+
+- id: a28
+  question: "Was ist das übergeordnete Ziel der Anforderungen an das Liquiditätsrisikomanagement?"
+  answerable: true
+  source_doc: null
+  gold_section: "BTR 3.1"
+  gold_span: "Das Institut hat sicherzustellen, dass es seine Zahlungsverpflichtungen jederzeit erfüllen kann"
+  note: "Short first Textziffer of a long section."
+
+- id: a29
+  question: "Was ist mit bedeutenden Schadensfällen aus operationellen Risiken zu tun?"
+  answerable: true
+  source_doc: null
+  gold_section: "BTR 4"
+  gold_span: "Bedeutende Schadensfälle sind unverzüglich hinsichtlich ihrer Ursachen zu analysieren"
+  note: "BTR 4 has no subsections, so the section heading is the only topic signal."
+
+- id: a30
+  question: "Was muss ein Institut für den Fall eines Liquiditätsengpasses festlegen?"
+  answerable: true
+  source_doc: null
+  gold_section: "BTR 3.1"
+  gold_span: "welche Maßnahmen im Fall eines Liquiditätsengpasses ergriffen werden sollen"
+  note: "Notfallplan für Liquiditätsengpässe; competes lexically with AT 7.3 Notfallmanagement (a16)."
+
+# --- Unanswerable -------------------------------------------------------------
+
+- id: u01
+  question: "Wie hoch ist die gesetzliche Einlagensicherung pro Einleger und Bank?"
+  answerable: false
+  source_doc: null
+  gold_section: null
   gold_span: null
-  note: "Template entry. Delete once real questions are written."
+  note: "Out of corpus (deposit guarantee law). The generator knows the figure from training: a non-abstaining answer here is parametric, not retrieved."
+
+- id: u02
+  question: "Welche harte Kernkapitalquote muss ein Institut mindestens einhalten?"
+  answerable: false
+  source_doc: null
+  gold_section: null
+  gold_span: null
+  note: "Capital ratios are set by the CRR, not by MaRisk. Lexically close to the Risikotragfähigkeit passages."
+
+- id: u03
+  question: "Wie viele Vollzeitstellen muss die Compliance-Funktion mindestens umfassen?"
+  answerable: false
+  source_doc: null
+  gold_section: null
+  gold_span: null
+  note: "Near miss: retrieval finds the Compliance-Funktion passages with high similarity, but no number of staff is set. A score threshold cannot catch this; only the generator can."
+
+- id: u04
+  question: "Bis zu welchem Betrag darf ein einzelner Händler Geschäfte ohne Zustimmung der Geschäftsleitung abschließen?"
+  answerable: false
+  source_doc: null
+  gold_section: null
+  gold_span: null
+  note: "Near miss: limits are required, their amounts are left to the institution."
+
+- id: u05
+  question: "Welche Solvenzkapitalanforderung gilt für Versicherungsunternehmen nach Solvency II?"
+  answerable: false
+  source_doc: null
+  gold_section: null
+  gold_span: null
+  note: "Out of scope while the corpus holds only the banking circulars. Becomes answerable once Solvency II material is added -- relabel then."
+
+- id: u06
+  question: "Welche Bußgelder drohen einem Institut bei Verstößen gegen die MaRisk?"
+  answerable: false
+  source_doc: null
+  gold_section: null
+  gold_span: null
+  note: "Near miss: the circular sets requirements, not sanctions."
+
+- id: u07
+  question: "Ab welcher Bilanzsumme gilt ein Institut als systemrelevant?"
+  answerable: false
+  source_doc: null
+  gold_section: null
+  gold_span: null
+  note: "Near miss: systemically important institutions are mentioned, the criteria are in the KWG. If a version of the circular does name a threshold, relabel."
+
+- id: u08
+  question: "Welche Anforderungen gelten für die Verwahrung von Kryptowerten nach MiCAR?"
+  answerable: false
+  source_doc: null
+  gold_section: null
+  gold_span: null
+  note: "Out of corpus, with generic overlap ('Anforderungen', 'Verwahrung')."
